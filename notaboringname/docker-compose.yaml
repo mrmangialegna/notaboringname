@@ -1,0 +1,30 @@
+version: "3.9"
+
+services:
+  app:
+    build: .
+    container_name: notaboringname_app
+    ports:
+      - "8080:8080"
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/notesdb
+      - AWS_REGION=us-west-2
+      - S3_BUCKET=cloning-app-storage
+    depends_on:
+      - mongodb
+    volumes:
+      - ./app_data:/app/data  # opzionale, per file temporanei o cache
+
+  mongodb:
+    image: mongo:6.0
+    container_name: notaboringname_mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: notesdb
+    ports:
+      - "27017:27017"
+    volumes:
+      - /mnt/mongo_data:/data/db
+
+volumes:
+  mongo_data:
