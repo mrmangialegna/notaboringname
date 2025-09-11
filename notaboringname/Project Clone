@@ -1,0 +1,30 @@
+Operational Structure - Heroku Clone
+
+Base machines running Docker and Kubernetes (K8s). These will be responsible for abstracting and managing the infrastructure on which user projects will run. The workflow will be as follows:
+
+Code Analyzer: Will read the user’s project to determine the necessary resources (CPU, GPU, storage) and will build the hardware abstraction. It will also analyze the code dependencies and its nature.
+Scaling: Will be managed by a mix of code analyzer, metrics, and load balancer. Specifically:
+Analyzer: Determines the resource requirements and generates an allocation plan.
+Metrics: Collects performance information from system components, such as CPU load, memory usage, etc., to feed the scaling system.
+Load Balancer: Manages incoming traffic at both layer 4 (TCP/UDP) and layer 7 (HTTP), distributing the load across containers.
+Technologies to Use
+
+– Code Analyzer Cloud Native Buildpacks: To analyze code and determine required resources. In communication with Terraform to create the necessary base infrastructure. A Python script will read these metrics and configure Terraform. Alternatively, provide a fixed base and then leave scalability to the other components.
+
+– Containerization Docker and Docker Compose: For container management during development. Kubernetes (K8s): To orchestrate containers at production level. Helm: To manage configurations and deployments on Kubernetes.
+
+– Metrics Prometheus: Will collect all metrics related to performance, resource usage, and container status. Will feed the automatic scaling system and monitoring.
+
+– Autoscaling Karpenter + KEDA: To manage autoscaling based on events and metrics collected by Prometheus. Redis: Used for workload management, caching (TTL policy), and support for autoscaling, especially for high-intensity workloads. Additionally, it will make copies of all incoming data on a PVC, which, configured according to garbage policies, will delete only cache files every 24 hours. This prevents data loss in crash scenarios.
+
+– NLB (Load Balancer) Ingress via NGINX or Traefik: Serves as a load balancer for traffic management at layer 4 and 7, distributing requests across Kubernetes pods and handling traffic balancing.
+
+– Security and Networking Istio: To manage traffic between microservices, provide security (TLS, authentication, authorization), and advanced routing policies both for incoming traffic and inside the cluster.
+
+– CI/CD Helm and GitHub: To manage the lifecycle of continuous integration and continuous delivery (CI/CD). These tools will ensure that code is automatically tested, built, and deployed.
+
+– Storage Solutions for persistent and non-persistent storage: e.g., PVCs in Kubernetes for persistent data, and solutions like Redis or Memcached for temporary data and caching.
+
+Observations
+
+– System Resilience It is not yet decided whether to leave the choice to the user or create some form of automation. For example: initially have an asynchronous copy, then a synchronous copy at intervals. Or rely on a semi-synchronous approach from the start.
