@@ -8,20 +8,20 @@ from pymongo import MongoClient
 
 app = Flask(__name__)
 
-# --- Configurazione MongoDB ---
+# --- MongoDB configuration ---
 mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017/notesdb")
 mongo_client = MongoClient(mongo_uri)
 db = mongo_client.get_default_database()
 notes_collection = db["notes"]
 calc_collection = db["calc_history"]
 
-# --- Configurazione S3 ---
+# --- S3 configuration ---
 s3 = boto3.client("s3", region_name=os.getenv("AWS_REGION", "us-west-2"))
 bucket_name = os.getenv("S3_BUCKET", "cloning-app-storage")
 notes_file = "notes.json"
 calc_file = "calc_history.json"
 
-# --- Funzioni per S3 ---
+# --- S3 functions ---
 def save_to_s3(key, data):
     s3.put_object(Bucket=bucket_name, Key=key, Body=json.dumps(data))
 
@@ -32,7 +32,7 @@ def load_from_s3(key):
     except s3.exceptions.NoSuchKey:
         return []
 
-# --- Funzioni sicure per la calcolatrice ---
+# --- Safe math functions for calculator ---
 safe_math = {k: getattr(math, k) for k in dir(math) if not k.startswith("__")}
 safe_math.update({"abs": abs, "round": round, "pow": pow})
 
@@ -49,26 +49,34 @@ def add_note_mongo(note):
 def add_calc_entry(entry):
     calc_collection.insert_one({"entry": entry})
 
+# Health check route
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({"status": "ok"}), 200
+
 # --- Routes Flask ---
+# Dashboard route
 @app.route("/")
 def index():
     notes = load_notes()
     calc_history = load_calc_history()
     return render_template("dashboard.html", notes=notes, calc_history=calc_history)
 
+# Add note route
 @app.route("/add_note", methods=["POST"])
 def add_note():
     note = request.form.get("note")
     if note:
         add_note_mongo(note)
         notes = load_notes()
-        save_to_s3(notes_file, notes)  # backup su S3
+        save_to_s3(notes_file, notes)  # backup on S3
     return jsonify({"status": "ok", "notes": notes})
 
+# Download notes route
 @app.route("/download_notes", methods=["GET"])
 def download_notes():
     notes = load_notes()
-    save_to_s3(notes_file, notes)  # aggiornamento backup S3
+    save_to_s3(notes_file, notes)  # update to S3 backup
     content = "\n".join(notes)
     return send_file(
         io.BytesIO(content.encode()),
@@ -76,7 +84,7 @@ def download_notes():
         as_attachment=True,
         download_name="notes.txt"
     )
-
+# Calculator route
 @app.route("/calculate", methods=["POST"])
 def calculate():
     expr = request.form.get("expression")

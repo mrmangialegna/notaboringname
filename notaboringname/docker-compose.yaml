@@ -7,24 +7,18 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - MONGO_URI=mongodb://mongodb:27017/notesdb
+      # MongoDB is now on private EC2  - IP interno
+      - MONGO_URI=mongodb://10.0.10.XXX:27017/notesdb  # IP of EC2 MongoDB 
       - AWS_REGION=us-west-2
       - S3_BUCKET=cloning-app-storage
-    depends_on:
-      - mongodb
+      - NODE_ENV=production
     volumes:
-      - ./app_data:/app/data  # opzionale, per file temporanei o cache
-
-  mongodb:
-    image: mongo:6.0
-    container_name: notaboringname_mongo
+      - ./app_data:/app/data  #  cache/logs
     restart: unless-stopped
-    environment:
-      MONGO_INITDB_DATABASE: notesdb
-    ports:
-      - "27017:27017"
-    volumes:
-      - /mnt/mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]  # For ALB health check
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
-volumes:
-  mongo_data:
