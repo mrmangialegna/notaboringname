@@ -7,10 +7,11 @@ services:
     ports:
       - "8080:8080"
     environment:
-      # MongoDB is now on private EC2  - IP interno
-      - MONGO_URI=mongodb://10.0.10.XXX:27017/notesdb  # IP of EC2 MongoDB 
-      - AWS_REGION=us-west-2
-      - S3_BUCKET=cloning-app-storage
+      # MongoDB connection - will be set by Terraform user_data
+      - MONGO_URI=${MONGO_URI:-mongodb://localhost:27017/notesdb}
+      - AWS_REGION=${AWS_REGION:-us-west-2}
+      - S3_BUCKET=${S3_BUCKET:-cloning-app-storage}
+      - FLASK_SECRET=${FLASK_SECRET:-supersecretkey}
       - NODE_ENV=production
     volumes:
       - ./app_data:/app/data  #  cache/logs
